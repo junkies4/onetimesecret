@@ -1,0 +1,7 @@
+<h3>Confirm Email</h3>
+Please enter the email address used to secure this secret:<br>
+<form action="/<%= @secret['secreturi']%>" method='get' class="form-inline well">
+  Email: <input name="email"><br>
+  <input name="secreturi" value="<%= @secret['secreturi'] %>" type="hidden">
+  <input class="btn primary" type='submit' name='confirmemail' value='Confirm Email'>
+</form>

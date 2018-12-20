@@ -1,0 +1,75 @@
+<h3>Create a ssh keypair</h3>
+<form action='/sshkeypair' method='get' class="form-inline well">
+  <table class="table">
+    <tr>
+      <td>SSH Key Type:</td>
+      <td>
+        <select name="keytype">
+         <option value="DSA" <% if @secret['keytype'] == "DSA" %>selected<% end %>>DSA</option>
+         <option value="RSA" <% if @secret['keytype'] == "RSA" %>selected<% end %>>RSA</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>SSH Key Length:</td>
+      <td>
+        <select name="keylength">
+         <option value="1024" <% if @secret['keylength'] == 1024 %>selected<% end %>>1024</option>
+         <option value="2048" <% if @secret['keylength'] == 2048 %>selected<% end %>>2048</option>
+         <option value="4096" <% if @secret['keylength'] == 4096 %>selected<% end %>>4096</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>SSH Key Comment:</td>
+      <td><input name="keycomment" value="<%= @secret['keycomment'] %>"></td>
+    </tr>
+    <tr>
+      <td>SSH  Key Passphrase:</td>
+      <td><input name="keypassphrase" value="<%= @secret['keypassphrase'] %>"></td>
+    </tr>
+    <tr>
+      <td>Recipient email:</td>
+      <td><input name="email" value="<%= @secret['email'] %>"></td>
+    </tr>
+    <tr>
+      <td>Secret Time To Live:</td>
+      <td>
+        <select name="ttl">
+          <option value="1800">30 minutes</option>
+          <option value="3600">1 hour</option>
+          <option value="43200">12 hours</option>
+          <option value="86400">24 hours</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td><input class="btn primary" type='submit' name='generatesecret' value='generate new ssh key'></td>
+      <td><input class="btn primary" type='submit' name='storesecret' value='store secret'></td>
+    </tr>
+    <% if @secret['encrypted_private_key'] %>
+    <tr>
+      <td colspan="2">
+        <pre class="alert alert-success"><%= @secret['encrypted_private_key'] %></pre>
+        <input name="encrypted_private_key" value="<%= @secret['encrypted_private_key'] %>" type="hidden">
+      </td>
+    </tr>
+    <% else %>
+    <tr>
+      <td colspan="2">
+        <pre class="alert alert-success"><%= @secret['private_key'] %></pre></td>
+        <input name="private_key" value="<%= @secret['private_key'] %>" type="hidden">
+      </td>
+    </tr>
+    <% end %>
+    <tr>
+      <td colspan="2"><pre class="alert alert-success"><%= @secret['public_key'] %></pre></td>
+    </tr>
+    <tr>
+      <td colspan="2"><pre class="alert alert-success"><code><%= @secret['ssh_public_key'] %></code></pre></td>
+    </tr>
+  </table>
+  <input name="public_key" value="<%= @secret['public_key'] %>" type="hidden">
+  <input name="ssh_public_key" value="<%= @secret['ssh_public_key'] %>" type="hidden">
+  <input name="secrettype" value="sshkeypair" type="hidden">
+</form>

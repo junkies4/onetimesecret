@@ -1,0 +1,49 @@
+<h3>Create a random secret</h3>
+<form action='/randomstring' method='get' class="form-inline well">
+<div class="form-group">
+  <table class="table">
+		<tr>
+			<td>Randomly generated secret:</td>
+			<td><pre class="alert alert-success" style="width: 850px" ><%= @secret['randomstring'] %></pre></td>
+		</tr>
+		<tr>
+			<td>Secret Length:</td>
+			<td><input name="secretlength" class="form-control" style="width: 100%" value="<%= @secret['secretlength'] || $appconfig['secrettype']['randomstring']['secretlength'] %>"></td>
+		</tr>   
+		<tr>
+			<td>Secret Type:</td>
+			<td>
+				<select name="secretiscomplex" class="form-control" style="width: 100%" >
+					<option value="false" <% if @secret['secretiscomplex'] == "false" %>selected<% end %>>letters and numbers</option>
+					<option value="true"  <% if @secret['secretiscomplex'] == "true"  %>selected<% end %>>letters and numbers + other characters</option>
+				</select>
+			</td>
+		</tr>   
+		<tr>
+			<td>Recipient email:</td>
+			<td><input name="email" class="form-control" style="width: 100%" value="<%= @secret['email'] %>"></td>
+		</tr>   
+		<tr>
+			<td>Comment:</td>
+			<td><input name="comment" class="form-control" style="width: 100%" value="<%= @secret['comment'] %>"></td>
+		</tr>   
+		<tr>
+			<td>Secret Time To Live:</td>
+			<td>
+				<select name="ttl" class="form-control" style="width: 100%" >
+					<option value="1800">30 minutes</option>
+					<option value="3600">1 hour</option>
+					<option value="43200">12 hours</option>
+					<option value="86400">24 hours</option>
+				</select>
+			</td>
+		</tr>   
+		<tr>
+			<td><input class="btn primary" type='submit' name='generatesecret' value='generate new random secret'></td>
+			<td><input class="btn primary" type='submit' name='storesecret' value='store secret'></td>
+		</tr>   
+		<input name="secrettype" value="randomstring" type="hidden">
+		<input name="randomstring" value="<%= @secret['randomstring'] %>" type="hidden">
+  </table>
+</div>
+</form>
