@@ -6,6 +6,7 @@ require 'redis'
 require 'json'
 require 'pony'
 require 'pp'
+require 'dotenv'
 
 ##############################
 # Initialize
@@ -14,7 +15,39 @@ require 'pp'
 # begin sinatra configure block
 configure do
   # read main app config file
-  $appconfig = YAML.load_file('config/config.yml')
+  # $appconfig = YAML.load_file('config/config.yml')
+
+  # populate appconfig hash via dotenv gem and .env config file
+  $appconfig = Hash.new
+
+  # Redis config
+  $appconfig['redis']['host'] = ENV['REDIS_HOST']
+  $appconfig['redis']['port'] = ENV['REDIS_PORT']
+  $appconfig['redis']['password'] = ENV['REDIS_PASSWORD']
+  $appconfig['redis']['secretttl'] = ENV['REDIS_SECRETTTL']
+
+  # secrettypes: customsecret, randomstring, sshkeypair
+  $appconfig['secrettype']['randomstring']['secretlength'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']
+  $appconfig['secrettype']['randomstring']['secretiscomplex'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETISCOMPLEX']
+  $appconfig['secrettype']['randomstring']['comment'] = ENV['SECRETTYPE_RANDOMSTRING_COMMENT']
+  $appconfig['secrettype']['randomstring']['email'] = ENV['SECRETTYPE_RANDOMSTRING_EMAIL']
+
+  $appconfig['secrettype']['sshkeypair']['keytype'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYTYPE']
+  $appconfig['secrettype']['sshkeypair']['keylength'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYLENGTH']
+  $appconfig['secrettype']['sshkeypair']['keycomment'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYCOMMENT']
+  $appconfig['secrettype']['sshkeypair']['keypassphrase'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYPASSPHRASE']
+  $appconfig['secrettype']['sshkeypair']['comment'] = ENV['SECRETTYPE_SSHKEYPAIR_COMMENT']
+  $appconfig['secrettype']['sshkeypair']['email'] = ENV['SECRETTYPE_SSHKEYPAIR_EMAIL']
+
+  $appconfig['secrettype']['customsecret']['secret'] = ENV['SECRETTYPE_CUSTOMSECRET_SECRET']
+  $appconfig['secrettype']['customsecret']['comment'] = ENV['SECRETTYPE_CUSTOMSECRET_COMMENT']
+  $appconfig['secrettype']['customsecret']['email'] = ENV['SECRETTYPE_CUSTOMSECRET_EMAIL']
+
+  $appconfig['smtp']['address'] = ENV['SMTP_ADDRESS']
+  $appconfig['smtp']['port']= ENV['SMTP_PORT']
+  $appconfig['smtp']['username']= ENV['SMTP_USERNAME']
+  $appconfig['smtp']['password']= ENV['SMTP_PASSWORD']
+  $appconfig['smtp']['from']= ENV['SMTP_FROM']
 
   # enable sessions
   use Rack::Session::Pool
