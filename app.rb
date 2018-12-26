@@ -21,33 +21,33 @@ configure do
   $appconfig = Hash.new
 
   # Redis config
-  $appconfig['redis']['host'] = ENV['REDIS_HOST']
-  $appconfig['redis']['port'] = ENV['REDIS_PORT']
-  $appconfig['redis']['password'] = ENV['REDIS_PASSWORD']
-  $appconfig['redis']['secretttl'] = ENV['REDIS_SECRETTTL']
+  $appconfig['redis_host'] = ENV['REDIS_HOST']
+  $appconfig['redis_port'] = ENV['REDIS_PORT']
+  $appconfig['redis_password'] = ENV['REDIS_PASSWORD']
+  $appconfig['redis_secretttl'] = ENV['REDIS_SECRETTTL']
 
   # secrettypes: customsecret, randomstring, sshkeypair
-  $appconfig['secrettype']['randomstring']['secretlength'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']
-  $appconfig['secrettype']['randomstring']['secretiscomplex'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETISCOMPLEX']
-  $appconfig['secrettype']['randomstring']['comment'] = ENV['SECRETTYPE_RANDOMSTRING_COMMENT']
-  $appconfig['secrettype']['randomstring']['email'] = ENV['SECRETTYPE_RANDOMSTRING_EMAIL']
+  $appconfig['secrettype_randomstring_secretlength'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']
+  $appconfig['secrettype_randomstring_secretiscomplex'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETISCOMPLEX']
+  $appconfig['secrettype_randomstring_comment'] = ENV['SECRETTYPE_RANDOMSTRING_COMMENT']
+  $appconfig['secrettype_randomstring_email'] = ENV['SECRETTYPE_RANDOMSTRING_EMAIL']
 
-  $appconfig['secrettype']['sshkeypair']['keytype'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYTYPE']
-  $appconfig['secrettype']['sshkeypair']['keylength'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYLENGTH']
-  $appconfig['secrettype']['sshkeypair']['keycomment'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYCOMMENT']
-  $appconfig['secrettype']['sshkeypair']['keypassphrase'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYPASSPHRASE']
-  $appconfig['secrettype']['sshkeypair']['comment'] = ENV['SECRETTYPE_SSHKEYPAIR_COMMENT']
-  $appconfig['secrettype']['sshkeypair']['email'] = ENV['SECRETTYPE_SSHKEYPAIR_EMAIL']
+  $appconfig['secrettype_sshkeypair_keytype'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYTYPE']
+  $appconfig['secrettype_sshkeypair_keylength'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYLENGTH']
+  $appconfig['secrettype_sshkeypair_keycomment'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYCOMMENT']
+  $appconfig['secrettype_sshkeypair_keypassphrase'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYPASSPHRASE']
+  $appconfig['secrettype_sshkeypair_comment'] = ENV['SECRETTYPE_SSHKEYPAIR_COMMENT']
+  $appconfig['secrettype_sshkeypair_email'] = ENV['SECRETTYPE_SSHKEYPAIR_EMAIL']
 
-  $appconfig['secrettype']['customsecret']['secret'] = ENV['SECRETTYPE_CUSTOMSECRET_SECRET']
-  $appconfig['secrettype']['customsecret']['comment'] = ENV['SECRETTYPE_CUSTOMSECRET_COMMENT']
-  $appconfig['secrettype']['customsecret']['email'] = ENV['SECRETTYPE_CUSTOMSECRET_EMAIL']
+  $appconfig['secrettype_customsecret_secret'] = ENV['SECRETTYPE_CUSTOMSECRET_SECRET']
+  $appconfig['secrettype_customsecret_comment'] = ENV['SECRETTYPE_CUSTOMSECRET_COMMENT']
+  $appconfig['secrettype_customsecret_email'] = ENV['SECRETTYPE_CUSTOMSECRET_EMAIL']
 
-  $appconfig['smtp']['address'] = ENV['SMTP_ADDRESS']
-  $appconfig['smtp']['port']= ENV['SMTP_PORT']
-  $appconfig['smtp']['username']= ENV['SMTP_USERNAME']
-  $appconfig['smtp']['password']= ENV['SMTP_PASSWORD']
-  $appconfig['smtp']['from']= ENV['SMTP_FROM']
+  $appconfig['smtp_address'] = ENV['SMTP_ADDRESS']
+  $appconfig['smtp_port']= ENV['SMTP_PORT']
+  $appconfig['smtp_username']= ENV['SMTP_USERNAME']
+  $appconfig['smtp_password']= ENV['SMTP_PASSWORD']
+  $appconfig['smtp_from']= ENV['SMTP_FROM']
 
   # enable sessions
   use Rack::Session::Pool
@@ -57,10 +57,10 @@ configure do
   set :logger_level, :debug
 
   # create connection to redis database
-  if $appconfig['redis']['password'] == ''
-    $redis = Redis.new(host: "#{$appconfig['redis']['host']}", port: $appconfig['redis']['port'])
+  if $appconfig['redis_password'] == ''
+    $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'])
   else
-    $redis = Redis.new(host: "#{$appconfig['redis']['host']}", port: $appconfig['redis']['port'], password: "#{$appconfig['redis']['password']}")
+    $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'], password: "#{$appconfig['redis_password']}")
   end
 end
 
@@ -136,19 +136,19 @@ helpers do
   end
 
   def send_email(to,secreturi)
-    logger.info("mailserver = #{$appconfig['smtp']['address']}")
+    logger.info("mailserver = #{$appconfig['smtp_address']}")
     Pony.mail({
-      :from => $appconfig['smtp']['from'],
+      :from => $appconfig['smtp_from'],
       :to => to,
       :subject => 'Secret Shared via Onetimescret',
       :body => "#{request.scheme}://#{request.host}/#{secreturi}",
       :via => :smtp,
       :via_options => {
-        :address        => $appconfig['smtp']['address'],
-        :port           => $appconfig['smtp']['port'],
+        :address        => $appconfig['smtp_address'],
+        :port           => $appconfig['smtp_port'],
         :enable_starttls_auto => false,
-        # :user_name      => $appconfig['smtp']['username'],
-        # :password       => $appconfig['smtp']['password'],
+        # :user_name      => $appconfig['smtp_username'],
+        # :password       => $appconfig['smtp_password'],
         # :authentication => :plain, # :plain, :login, :cram_md5, no auth by default
         :domain         => "herbosch.be" # the HELO domain provided by the client to the server
       }
@@ -171,9 +171,9 @@ get '/' do
     halt erb :secretstored
   end
 
-  comment      = params['comment'] || $appconfig['secrettype']['customsecret']['comment']
-  email        = params['email']   || $appconfig['secrettype']['customsecret']['email']
-  ttl          = params['ttl']     || $appconfig['redis']['secretttl']
+  comment      = params['comment'] || $appconfig['secrettype_customsecret_comment']
+  email        = params['email']   || $appconfig['secrettype_customsecret_email']
+  ttl          = params['ttl']     || $appconfig['redis_secretttl']
   customsecret = params['customsecret']
 
   @secret = generate_secret(
@@ -194,11 +194,11 @@ get '/randomstring' do
     halt erb :secretstored
   end
 
-  secretlength    = params['secretlength']    || $appconfig['secrettype']['randomstring']['secretlength']
-  secretiscomplex = params['secretiscomplex'] || $appconfig['secrettype']['randomstring']['secretiscomplex']
-  comment         = params['comment']         || $appconfig['secrettype']['randomstring']['comment']
-  email           = params['email']           || $appconfig['secrettype']['randomstring']['email']
-  ttl             = params['ttl']             || $appconfig['redis']['secretttl']
+  secretlength    = params['secretlength']    || $appconfig['secrettype_randomstring_secretlength']
+  secretiscomplex = params['secretiscomplex'] || $appconfig['secrettype_randomstring_secretiscomplex']
+  comment         = params['comment']         || $appconfig['secrettype_randomstring_comment']
+  email           = params['email']           || $appconfig['secrettype_randomstring_email']
+  ttl             = params['ttl']             || $appconfig['redis_secretttl']
 
   @secret = generate_secret(
               :type            => 'randomstring',
@@ -224,13 +224,13 @@ get '/sshkeypair' do
     halt erb :secretstored
   end
 
-  keytype       = params['keytype']       || $appconfig['secrettype']['sshkeypair']['keytype']
-  keylength     = params['keylength']     || $appconfig['secrettype']['sshkeypair']['keylength']
-  keycomment    = params['keycomment']    || $appconfig['secrettype']['sshkeypair']['keycomment']
-  keypassphrase = params['keypassphrase'] || $appconfig['secrettype']['sshkeypair']['keypassphrase']
-  comment       = params['comment']       || $appconfig['secrettype']['sshkeypair']['comment']
-  email         = params['email']         || $appconfig['secrettype']['sshkeypair']['email']
-  ttl           = params['ttl']           || $appconfig['redis']['secretttl']
+  keytype       = params['keytype']       || $appconfig['secrettype_sshkeypair_keytype']
+  keylength     = params['keylength']     || $appconfig['secrettype_sshkeypair_keylength']
+  keycomment    = params['keycomment']    || $appconfig['secrettype_sshkeypair_keycomment']
+  keypassphrase = params['keypassphrase'] || $appconfig['secrettype_sshkeypair_keypassphrase']
+  comment       = params['comment']       || $appconfig['secrettype_sshkeypair_comment']
+  email         = params['email']         || $appconfig['secrettype_sshkeypair_email']
+  ttl           = params['ttl']           || $appconfig['redis_secretttl']
 
   @secret = generate_secret(
               :type          => 'sshkeypair',
