@@ -6,7 +6,7 @@ require 'redis'
 require 'json'
 require 'pony'
 require 'pp'
-require 'dotenv'
+require 'dotenv/load'
 
 ##############################
 # Initialize
@@ -21,33 +21,38 @@ configure do
   $appconfig = Hash.new
 
   # Redis config
-  $appconfig['redis_host'] = ENV['REDIS_HOST']
-  $appconfig['redis_port'] = ENV['REDIS_PORT']
-  $appconfig['redis_password'] = ENV['REDIS_PASSWORD']
-  $appconfig['redis_secretttl'] = ENV['REDIS_SECRETTTL']
+  $appconfig['redis_host']      = ENV['REDIS_HOST']      || nil
+  $appconfig['redis_port']      = ENV['REDIS_PORT']      || nil
+  $appconfig['redis_password']  = ENV['REDIS_PASSWORD']  || nil
+  $appconfig['redis_secretttl'] = ENV['REDIS_SECRETTTL'] || nil
 
   # secrettypes: customsecret, randomstring, sshkeypair
-  $appconfig['secrettype_randomstring_secretlength'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']
-  $appconfig['secrettype_randomstring_secretiscomplex'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETISCOMPLEX']
-  $appconfig['secrettype_randomstring_comment'] = ENV['SECRETTYPE_RANDOMSTRING_COMMENT']
-  $appconfig['secrettype_randomstring_email'] = ENV['SECRETTYPE_RANDOMSTRING_EMAIL']
+  $appconfig['secrettype_randomstring_secretlength']    = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']    || nil
+  $appconfig['secrettype_randomstring_secretiscomplex'] = ENV['SECRETTYPE_RANDOMSTRING_SECRETISCOMPLEX'] || nil
+  $appconfig['secrettype_randomstring_comment']         = ENV['SECRETTYPE_RANDOMSTRING_COMMENT']         || nil
+  $appconfig['secrettype_randomstring_email']           = ENV['SECRETTYPE_RANDOMSTRING_EMAIL']           || nil
 
-  $appconfig['secrettype_sshkeypair_keytype'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYTYPE']
-  $appconfig['secrettype_sshkeypair_keylength'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYLENGTH']
-  $appconfig['secrettype_sshkeypair_keycomment'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYCOMMENT']
-  $appconfig['secrettype_sshkeypair_keypassphrase'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYPASSPHRASE']
-  $appconfig['secrettype_sshkeypair_comment'] = ENV['SECRETTYPE_SSHKEYPAIR_COMMENT']
-  $appconfig['secrettype_sshkeypair_email'] = ENV['SECRETTYPE_SSHKEYPAIR_EMAIL']
+  $appconfig['secrettype_sshkeypair_keytype']       = ENV['SECRETTYPE_SSHKEYPAIR_KEYTYPE']       || nil
+  $appconfig['secrettype_sshkeypair_keylength']     = ENV['SECRETTYPE_SSHKEYPAIR_KEYLENGTH']     || nil
+  $appconfig['secrettype_sshkeypair_keycomment']    = ENV['SECRETTYPE_SSHKEYPAIR_KEYCOMMENT']    || nil
+  $appconfig['secrettype_sshkeypair_keypassphrase'] = ENV['SECRETTYPE_SSHKEYPAIR_KEYPASSPHRASE'] || nil
+  $appconfig['secrettype_sshkeypair_comment']       = ENV['SECRETTYPE_SSHKEYPAIR_COMMENT']       || nil
+  $appconfig['secrettype_sshkeypair_email']         = ENV['SECRETTYPE_SSHKEYPAIR_EMAIL']         || nil
 
-  $appconfig['secrettype_customsecret_secret'] = ENV['SECRETTYPE_CUSTOMSECRET_SECRET']
-  $appconfig['secrettype_customsecret_comment'] = ENV['SECRETTYPE_CUSTOMSECRET_COMMENT']
-  $appconfig['secrettype_customsecret_email'] = ENV['SECRETTYPE_CUSTOMSECRET_EMAIL']
+  $appconfig['secrettype_customsecret_secret']  = ENV['SECRETTYPE_CUSTOMSECRET_SECRET']  || nil
+  $appconfig['secrettype_customsecret_comment'] = ENV['SECRETTYPE_CUSTOMSECRET_COMMENT'] || nil
+  $appconfig['secrettype_customsecret_email']   = ENV['SECRETTYPE_CUSTOMSECRET_EMAIL']   || nil
 
-  $appconfig['smtp_address'] = ENV['SMTP_ADDRESS']
-  $appconfig['smtp_port']= ENV['SMTP_PORT']
-  $appconfig['smtp_username']= ENV['SMTP_USERNAME']
-  $appconfig['smtp_password']= ENV['SMTP_PASSWORD']
-  $appconfig['smtp_from']= ENV['SMTP_FROM']
+  $appconfig['smtp_address']     = ENV['SMTP_ADDRESS']     || nil
+  $appconfig['smtp_port']        = ENV['SMTP_PORT']        || nil
+  $appconfig['smtp_username']    = ENV['SMTP_USERNAME']    || nil
+  $appconfig['smtp_password']    = ENV['SMTP_PASSWORD']    || nil
+  $appconfig['smtp_from']        = ENV['SMTP_FROM']        || nil
+  $appconfig['smtp_helo_domain'] = ENV['SMTP_HELO_DOMAIN'] || nil
+
+  # webrick listen everywhere
+  set :bind, '0.0.0.0'
+  :show_exceptions
 
   # enable sessions
   use Rack::Session::Pool
@@ -57,7 +62,8 @@ configure do
   set :logger_level, :debug
 
   # create connection to redis database
-  if $appconfig['redis_password'] == ''
+  # if $appconfig['redis_password'] == ''
+  if $appconfig['redis_password'].nil?
     $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'])
   else
     $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'], password: "#{$appconfig['redis_password']}")
@@ -144,13 +150,13 @@ helpers do
       :body => "#{request.scheme}://#{request.host}/#{secreturi}",
       :via => :smtp,
       :via_options => {
-        :address        => $appconfig['smtp_address'],
-        :port           => $appconfig['smtp_port'],
-        :enable_starttls_auto => false,
+        :address              => $appconfig['smtp_address'],
+        :port                 => $appconfig['smtp_port'],
+        :domain               => $appconfig['smtp_helo_domain'],
+        :enable_starttls_auto => true,
         # :user_name      => $appconfig['smtp_username'],
         # :password       => $appconfig['smtp_password'],
         # :authentication => :plain, # :plain, :login, :cram_md5, no auth by default
-        :domain         => "herbosch.be" # the HELO domain provided by the client to the server
       }
     })
   end
