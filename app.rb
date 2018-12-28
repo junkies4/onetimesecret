@@ -1,4 +1,5 @@
 require 'sinatra'
+require 'sinatra/multi_route'
 require 'sinatra/logger'
 require 'yaml'
 require 'sshkey'
@@ -171,7 +172,8 @@ end
 #
 
 # generate custom secret
-get '/' do
+# get '/' do
+route :get, :post, '/' do
   if params['storesecret']
     @storedsecret = storesecret(params)
     halt erb :secretstored
@@ -194,7 +196,8 @@ get '/' do
 end
 
 # generate randomstring
-get '/randomstring' do
+# get '/randomstring' do
+route :get, :post, '/randomstring' do
   if params['storesecret']
     @storedsecret = storesecret(params)
     halt erb :secretstored
@@ -219,7 +222,8 @@ get '/randomstring' do
 end
 
 # generate ssh keypair
-get '/sshkeypair' do
+# get '/sshkeypair' do
+route :get, :post, '/sshkeypair' do
   if params['storesecret']
     @storedsecret = storesecret(params)
     if params['email'] != ''
