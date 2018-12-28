@@ -6,7 +6,6 @@ require 'sshkey'
 require 'redis'
 require 'json'
 require 'pony'
-require 'pp'
 require 'dotenv/load'
 
 ##############################
@@ -15,10 +14,7 @@ require 'dotenv/load'
 
 # begin sinatra configure block
 configure do
-  # read main app config file
-  # $appconfig = YAML.load_file('config/config.yml')
-
-  # populate appconfig hash via dotenv gem and .env config file
+  # populate appconfig hash via environment vars or read from the .env config file
   $appconfig = Hash.new
 
   # Redis config
@@ -51,16 +47,12 @@ configure do
   $appconfig['smtp_from']        = ENV['SMTP_FROM']        || nil
   $appconfig['smtp_helo_domain'] = ENV['SMTP_HELO_DOMAIN'] || nil
 
-  # webrick listen everywhere
-  set :bind, '0.0.0.0'
-  :show_exceptions
-
   # enable sessions
   use Rack::Session::Pool
 
   # enable logging
   set :root, Dir.pwd
-  set :logger_level, :debug
+  set :logger, Logger.new(STDERR)
 
   # create connection to redis database
   # if $appconfig['redis_password'] == ''
@@ -143,7 +135,6 @@ helpers do
   end
 
   def send_email(to,secreturi)
-    logger.info("mailserver = #{$appconfig['smtp_address']}")
     Pony.mail({
       :from => $appconfig['smtp_from'],
       :to => to,
@@ -160,6 +151,7 @@ helpers do
         # :authentication => :plain, # :plain, :login, :cram_md5, no auth by default
       }
     })
+    logger.info "mail sent to #{to}"
   end
 end
 
@@ -227,8 +219,6 @@ route :get, :post, '/sshkeypair' do
   if params['storesecret']
     @storedsecret = storesecret(params)
     if params['email'] != ''
-      logger.info("= send an email to #{params['email']} =")
-      logger.info(pp params.to_yaml)
       send_email(params['email'],params['secreturi'])
     end
     halt erb :secretstored
