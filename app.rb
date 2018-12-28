@@ -164,10 +164,12 @@ end
 #
 
 # generate custom secret
-# get '/' do
 route :get, :post, '/' do
   if params['storesecret']
     @storedsecret = storesecret(params)
+    if params['email'] != ''
+      send_email(params['email'],params['secreturi'])
+    end
     halt erb :secretstored
   end
 
@@ -188,10 +190,12 @@ route :get, :post, '/' do
 end
 
 # generate randomstring
-# get '/randomstring' do
 route :get, :post, '/randomstring' do
   if params['storesecret']
     @storedsecret = storesecret(params)
+    if params['email'] != ''
+      send_email(params['email'],params['secreturi'])
+    end
     halt erb :secretstored
   end
 
@@ -214,7 +218,6 @@ route :get, :post, '/randomstring' do
 end
 
 # generate ssh keypair
-# get '/sshkeypair' do
 route :get, :post, '/sshkeypair' do
   if params['storesecret']
     @storedsecret = storesecret(params)
@@ -247,7 +250,6 @@ route :get, :post, '/sshkeypair' do
 end
 
 # retrieve a secret
-# get '/:shortcode' do
 route :get, :post, '/:shortcode' do
 
   # get the secret from the redis database
