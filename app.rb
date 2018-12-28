@@ -247,7 +247,8 @@ route :get, :post, '/sshkeypair' do
 end
 
 # retrieve a secret
-get '/:shortcode' do
+# get '/:shortcode' do
+route :get, :post, '/:shortcode' do
 
   # get the secret from the redis database
   redis_secret = $redis.get "secrets:#{params['shortcode']}"
