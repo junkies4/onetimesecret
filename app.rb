@@ -8,6 +8,7 @@ require 'json'
 require 'pony'
 require 'dotenv/load'
 require 'openssl'
+require 'pp'
 
 ##############################
 # Initialize
