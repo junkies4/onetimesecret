@@ -6,9 +6,11 @@ This application allows users to temporarily store sensitive information and pas
 ## Security concept
 The idea behind this application is that the shared inormation is secure per definition upon access because it can be viewed only once. If you can see the secret, you are per definition the first and only one to have accessed this information.
 
-The stored information is not encrypted. This removes the need to pass along a decryption key over an insecure channel. Each record in the database has a TTL (time to live) with a max of 24 hours. This means no sensitive info will linger around if it is not retrieved in a timely fashion. After storing a secret, you can simply send the unique url over an insecure channel like email, chat, whatever.
+Each record in the database has a TTL (time to live) with a max of 24 hours. This means no sensitive info will linger around if it is not retrieved in a timely fashion. After storing a secret, you can simply send the unique url over an insecure channel like email, chat, whatever.
 
 The information that would be shared through this application is contextless ideally : Do not create a secret containing server address, username and password. Instead, only store a password, sshkey or whatever, without any further context. All non-trivial information like server address and username can be shared outside of Onetimesecret. 
+
+All information in the database is encrypted (AES256) and each entry is salted with a random salt. The application encrypts and decrypts the information based on a predefined encryption key stored in an Environment Variable.
 
 ## Usage
 The application allows you to store or generate three different kinds of 'secret': Custom, Random String or SSH Keypair.
