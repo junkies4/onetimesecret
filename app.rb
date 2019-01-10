@@ -7,6 +7,7 @@ require 'redis'
 require 'json'
 require 'pony'
 require 'dotenv/load'
+require 'openssl'
 
 ##############################
 # Initialize
@@ -14,6 +15,9 @@ require 'dotenv/load'
 
 # begin sinatra configure block
 configure do
+  # bind
+  set :bind, '0.0.0.0'
+
   # populate appconfig hash via environment vars or read from the .env config file
   $appconfig = Hash.new
 
@@ -22,6 +26,8 @@ configure do
   $appconfig['redis_port']      = ENV['REDIS_PORT']      || nil
   $appconfig['redis_password']  = ENV['REDIS_PASSWORD']  || nil
   $appconfig['redis_secretttl'] = ENV['REDIS_SECRETTTL'] || nil
+
+  $appconfig['encryption_key']  = ENV['ENCRYPTION_KEY']  || nil
 
   # secrettypes: customsecret, randomstring, sshkeypair
   $appconfig['secrettype_randomstring_secretlength']    = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']    || nil
@@ -40,6 +46,7 @@ configure do
   $appconfig['secrettype_customsecret_comment'] = ENV['SECRETTYPE_CUSTOMSECRET_COMMENT'] || nil
   $appconfig['secrettype_customsecret_email']   = ENV['SECRETTYPE_CUSTOMSECRET_EMAIL']   || nil
 
+  # SMTP config
   $appconfig['smtp_address']     = ENV['SMTP_ADDRESS']     || nil
   $appconfig['smtp_port']        = ENV['SMTP_PORT']        || nil
   $appconfig['smtp_username']    = ENV['SMTP_USERNAME']    || nil
@@ -71,14 +78,14 @@ end
 helpers do
   def generate_randomstring(secretlength,secretiscomplex)
     charset = Array('A'..'Z') + Array('a'..'z') + Array('0'..'9')
-  
+
     if secretiscomplex == "true"
       charset = charset + %w{! @ # $ % ^ & * ( ) _ - + = { } [ ] ; : ? / > < , . ~}
     end
-  
+
     CGI.escapeHTML(Array.new(secretlength) { charset.sample }.join)
   end
-  
+
   def generate_sshkeypair(keytype,keylength,keycomment,keypassphrase)
     if keypassphrase != ''
       @sshkey = SSHKey.generate(
@@ -95,22 +102,22 @@ helpers do
       )
     end
   end
-  
+
   def generate_secret(params)
     secret = Hash.new
     secret['type']            = params[:type]
     secret['comment']         = params[:comment]
     secret['email']           = params[:email]
     secret['ttl']             = params[:ttl]
-  
+
     secret['secretlength']    = params[:secretlength]
     secret['secretiscomplex'] = params[:secretiscomplex]
-  
+
     secret['keytype']         = params[:keytype]
     secret['keylength']       = params[:keylength]
     secret['keycomment']      = params[:keycomment]
     secret['keypassphrase']   = params[:keypassphrase]
-  
+
     case secret['type']
     when "customsecret"
       secret['customsecret'] = params[:customsecret]
@@ -123,14 +130,68 @@ helpers do
       secret['private_key'] = @sshkeypair.private_key
       secret['encrypted_private_key'] = @sshkeypair.encrypted_private_key if secret['keypassphrase'] != ''
     end
-  
+
     return secret
   end
-  
-  def storesecret ( params )
+
+  # encrypt a string using a pre-defined encryption key
+  def encrypt(unencrypted_text,encryption_key)
+
+    # initialize new cipher object
+    cipher = OpenSSL::Cipher::AES256.new :CBC
+    cipher.encrypt
+
+    # generate random Initialization Vector (iv) aka Salt
+    # the iv will be returned together with the encrypted string because it is required when decrypting
+    iv = cipher.random_iv
+    encrypted_iv = Base64.encode64(iv)
+
+    # set the predefined encryption_key as the cipher.key
+    cipher.key = encryption_key
+
+    # encrypt the string and Base64 encode it
+    encrypted_text = Base64.encode64(cipher.update(unencrypted_text) + cipher.final)
+
+    # create new hash to store the IV and encrypted string
+    encrypted_result           = Hash.new
+    encrypted_result['params'] = encrypted_text
+    encrypted_result['iv']     = encrypted_iv
+
+    return encrypted_result
+  end
+
+  # decrypt a string using a pre-defined encryption key
+  def decrypt(encrypted_secret,encryption_key)
+
+    # initialize new cipher object
+    decipher = OpenSSL::Cipher::AES256.new :CBC
+    decipher.decrypt
+
+    # use the base64 decoded IV which was fetched from the redis secret
+    decipher.iv = Base64.decode64(encrypted_secret['iv'])
+
+    # set the predefined encryption_key as the decipher.key
+    decipher.key = encryption_key
+
+    # decrypt and decode the secret
+    decrypted_secret = Base64.decode64(decipher.update(Base64.decode64(encrypted_secret['params'])) + decipher.final)
+
+    # pass the plaintext data back to the application
+    return decrypted_secret
+  end
+
+  def storesecret(params)
     params.delete('storesecret')
     params['secreturi'] = generate_randomstring(32,'false')
-    $redis.setex "secrets:#{params['secreturi']}", params['ttl'], params
+
+    # encrypt all parameter values before storing them:
+    # convert the params hash to json and then Base64 encode it.
+    # the 'encrypt' function returns a hash containing the Base64 encode encrypted string and iv.
+    encrypted_params = Hash.new
+    encrypted_params = encrypt(Base64.encode64(JSON.dump(params)),$appconfig['encryption_key'])
+
+    # store the hash in redis
+    $redis.setex "secrets:#{params['secreturi']}", params['ttl'], encrypted_params
     return params
   end
 
@@ -262,12 +323,16 @@ route :get, :post, '/:shortcode' do
   end
 
   # convert redis secret to ruby object
-  @secret = JSON.parse(redis_secret.gsub('=>', ':'))
+  # this redis hash contains a base64 encoded salt and the encrypted secret, also base64 encoded
+  encrypted_secret = JSON.parse(redis_secret.gsub('=>', ':'))
 
-  # if secret does not contain email, show secret and halt
+  # decode and decrypt the secret
+  @secret = JSON.parse(decrypt(encrypted_secret,$appconfig['encryption_key']))
+
+  # if the secret does not contain email, show secret and halt
   if @secret['email'] == ''
     $redis.del "secrets:#{params[:shortcode]}"
-    if params['format'] == "json" 
+    if params['format'] == "json"
       json(JSON.parse(redis_secret.gsub('=>', ':')))
     else
       halt erb(:showsecret)
@@ -276,6 +341,8 @@ route :get, :post, '/:shortcode' do
 
   # if secret contains email, ask for email input
   if @secret['email'] != '' and not params['confirmemail']
+    logger.info "DEBUG IF STATEMENT"
+    logger.info pp(@secret['email'])
     halt erb(:confirmemail)
   end
 
