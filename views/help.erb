@@ -1,0 +1,35 @@
+<h3>One time secret help</h3>
+
+<div class="alert alert-info">
+This application allows users to temporarily store sensitive information and pass it along easily and securely. Each secret has it's own unique url. Upon retrieval, the secret gets deleted from the database immediately. Each secret can thus be retrieved only once. If the recipient can not retrieve the secret when accessing the unique url, someone else might have seen the secret already, therefor the data might be compromised.
+</div>
+
+<h3>Secret Types</h3>
+
+<div class="alert alert-info">
+<h4>Custom Secret</h4>
+Type or paste any piece of text (certificates, private keys, passwords, whatever) in the custom secret field and click 'store secret' to save the text.
+</div>
+<div class="alert alert-info">
+<h4>Random String</h4>
+Generates a simple random string with a default length. Change the length and make the string more complex by changing 'Secret Type' to 'letters and numners + other characters'.<br>
+Click the 'generate new random secret' button after you updated the settings. The new random string will be displayed.<br>
+Click the 'store secret' button to save the currently displayed secret.
+</div>
+<div class="alert alert-info">
+<h4>SSH Keypair</h4>
+Generate a ssh keypair in RSA or DSA format with a given keylength.<br>
+You can add a passphrase to encrypt the private key. The passphrase will be stored with the secret and will be presented when the keypair is retrieved from the databse.<br>
+SSH Key Comment will be appended to the ssh-formatted public key.<br>
+Click the 'generate new ssh key' button after you updated the settings. The newly generated keypair will be displayed.<br>
+Click the 'store secret' button to save the currently displayed keypair.
+</div>
+
+<h3>General options</h3>
+
+<div class="alert alert-info">
+You can add a comment to the Custom and Random secrets by using the 'comment' field. Make sure not to add too much context to keep the secret safe.<br>
+<br>
+You can add a recipient email to each secret. This will send out and email containing the unique url.<br>
+The recipient will have to enter the emailaddress when retrieving the secret.
+</div>

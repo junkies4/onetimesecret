@@ -225,6 +225,12 @@ end
 # Start URI Definitions
 #
 
+
+# help
+route :get, '/help' do
+  erb :help
+end
+
 # generate custom secret
 route :get, :post, '/' do
   if params['storesecret']
