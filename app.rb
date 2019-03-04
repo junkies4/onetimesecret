@@ -320,47 +320,52 @@ end
 # retrieve a secret
 route :get, :post, '/:shortcode' do
 
-  # get the secret from the redis database
-  redis_secret = $redis.get "secrets:#{params['shortcode']}"
+  if params['revealsecret']
+    # get the secret from the redis database
+    redis_secret = $redis.get "secrets:#{params['shortcode']}"
 
-  # if secret not found in redis, halt with error
-  if redis_secret == nil
-    @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!" 
-    halt erb(:layout)
-  end
-
-  # convert redis secret to ruby object
-  # this redis hash contains a base64 encoded salt and the encrypted secret, also base64 encoded
-  encrypted_secret = JSON.parse(redis_secret.gsub('=>', ':'))
-
-  # decode and decrypt the secret
-  @secret = JSON.parse(decrypt(encrypted_secret,$appconfig['encryption_key']))
-
-  # if the secret does not contain email, show secret and halt
-  if @secret['email'] == ''
-    $redis.del "secrets:#{params[:shortcode]}"
-    if params['format'] == "json"
-      json(JSON.parse(redis_secret.gsub('=>', ':')))
-    else
-      halt erb(:showsecret)
+    # if secret not found in redis, halt with error
+    if redis_secret == nil
+      @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!" 
+      halt erb(:layout)
     end
-  end
 
-  # if secret contains email, ask for email input
-  if @secret['email'] != '' and not params['confirmemail']
-    logger.info "DEBUG IF STATEMENT"
-    logger.info pp(@secret['email'])
-    halt erb(:confirmemail)
-  end
+    # convert redis secret to ruby object
+    # this redis hash contains a base64 encoded salt and the encrypted secret, also base64 encoded
+    encrypted_secret = JSON.parse(redis_secret.gsub('=>', ':'))
 
-  # if confirmation email submitted and email matches with secret email, show secret
-  if params['confirmemail'] and params['email'] == @secret['email']
-    $redis.del "secrets:#{params[:shortcode]}"
-    halt erb(:showsecret)
+    # decode and decrypt the secret
+    @secret = JSON.parse(decrypt(encrypted_secret,$appconfig['encryption_key']))
+
+    # if the secret does not contain email, show secret and halt
+    if @secret['email'] == ''
+      $redis.del "secrets:#{params[:shortcode]}"
+      if params['format'] == "json"
+	json(JSON.parse(redis_secret.gsub('=>', ':')))
+      else
+	halt erb(:showsecret)
+      end
+    end
+
+    # if secret contains email, ask for email input
+    if @secret['email'] != '' and not params['confirmemail']
+      logger.info "DEBUG IF STATEMENT"
+      logger.info pp(@secret['email'])
+      halt erb(:confirmemail)
+    end
+
+    # if confirmation email submitted and email matches with secret email, show secret
+    if params['confirmemail'] and params['email'] == @secret['email']
+      $redis.del "secrets:#{params[:shortcode]}"
+      halt erb(:showsecret)
+    else
+      # else, confirmation email not correct, abort
+      @error = "ERROR: Email address incorrect!" 
+      halt erb(:layout)
+    end
   else
-    # else, confirmation email not correct, abort
-    @error = "ERROR: Email address incorrect!" 
-    halt erb(:layout)
+    # if #{revealsecret} is false, display a reveal button, not the secret
+    @shortcode = params['shortcode']
+    halt erb(:showsecret)
   end
-
 end
