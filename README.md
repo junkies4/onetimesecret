@@ -1,6 +1,8 @@
 # One Time Secret - Keep sensitive data out of email and chat logs
 
 ## Overview
+This is my own take on the already existing https://onetimesecret.com
+
 This application allows users to temporarily store sensitive information and pass it along easily and securely. Each secret has it's own unique url. Upon retrieval, the secret gets deleted from the database immediately. Each secret can thus be retrieved only once. If the recipient can not retrieve the secret when accessing the unique url, someone else might have seen the secret already, therefor the data might be compromised.
 
 ## Security concept
