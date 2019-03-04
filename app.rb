@@ -225,7 +225,6 @@ end
 # Start URI Definitions
 #
 
-
 # help
 route :get, '/help' do
   erb :help
@@ -319,16 +318,18 @@ end
 
 # retrieve a secret
 route :get, :post, '/:shortcode' do
+  # get the secret from the redis database
+  redis_secret = $redis.get "secrets:#{params['shortcode']}"
+
+  # if secret not found in redis, halt with error
+  if redis_secret == nil
+    @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!" 
+    halt erb(:layout)
+  end
 
   if params['revealsecret']
-    # get the secret from the redis database
-    redis_secret = $redis.get "secrets:#{params['shortcode']}"
-
-    # if secret not found in redis, halt with error
-    if redis_secret == nil
-      @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!" 
-      halt erb(:layout)
-    end
+    # template 'showsecret' needs this variable so it knows it can reveal the secret
+    @revealsecret = true
 
     # convert redis secret to ruby object
     # this redis hash contains a base64 encoded salt and the encrypted secret, also base64 encoded
@@ -341,16 +342,14 @@ route :get, :post, '/:shortcode' do
     if @secret['email'] == ''
       $redis.del "secrets:#{params[:shortcode]}"
       if params['format'] == "json"
-	json(JSON.parse(redis_secret.gsub('=>', ':')))
+        json(JSON.parse(redis_secret.gsub('=>', ':')))
       else
-	halt erb(:showsecret)
+        halt erb(:showsecret)
       end
     end
 
     # if secret contains email, ask for email input
     if @secret['email'] != '' and not params['confirmemail']
-      logger.info "DEBUG IF STATEMENT"
-      logger.info pp(@secret['email'])
       halt erb(:confirmemail)
     end
 
