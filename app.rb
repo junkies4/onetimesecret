@@ -167,7 +167,7 @@ helpers do
 
     # initialize new cipher object
     # decipher = OpenSSL::Cipher::AES256.new :CBC
-    cipher = OpenSSL::Cipher.new('aes-256-gcm')
+    decipher = OpenSSL::Cipher.new('aes-256-gcm')
     decipher.decrypt
 
     # use the base64 decoded IV which was fetched from the redis secret
