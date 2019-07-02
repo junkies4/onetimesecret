@@ -140,7 +140,7 @@ helpers do
 
     # initialize new cipher object
     # cipher = OpenSSL::Cipher::AES256.new :CBC
-    cipher = OpenSSL::Cipher::AES256.new :GCM
+    cipher = OpenSSL::Cipher.new('aes-256-gcm')
     cipher.encrypt
 
     # generate random Initialization Vector (iv) aka Salt
@@ -167,7 +167,7 @@ helpers do
 
     # initialize new cipher object
     # decipher = OpenSSL::Cipher::AES256.new :CBC
-    decipher = OpenSSL::Cipher::AES256.new :GCM
+    cipher = OpenSSL::Cipher.new('aes-256-gcm')
     decipher.decrypt
 
     # use the base64 decoded IV which was fetched from the redis secret
