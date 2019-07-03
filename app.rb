@@ -66,6 +66,8 @@ configure do
   # if $appconfig['redis_password'] == ''
   if $appconfig['redis_password'].nil?
     $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'])
+    # docker-compose hack - issue with redis_port ENV variable - needs to be fixed.
+    # $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: 6379)
   else
     $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'], password: "#{$appconfig['redis_password']}")
   end
@@ -139,8 +141,7 @@ helpers do
   def encrypt(unencrypted_text,encryption_key)
 
     # initialize new cipher object
-    # cipher = OpenSSL::Cipher::AES256.new :CBC
-    cipher = OpenSSL::Cipher.new('aes-256-gcm')
+    cipher = OpenSSL::Cipher::AES256.new :CFB
     cipher.encrypt
 
     # generate random Initialization Vector (iv) aka Salt
@@ -166,8 +167,7 @@ helpers do
   def decrypt(encrypted_secret,encryption_key)
 
     # initialize new cipher object
-    # decipher = OpenSSL::Cipher::AES256.new :CBC
-    decipher = OpenSSL::Cipher.new('aes-256-gcm')
+    decipher = OpenSSL::Cipher::AES256.new :CFB
     decipher.decrypt
 
     # use the base64 decoded IV which was fetched from the redis secret
