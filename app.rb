@@ -9,6 +9,7 @@ require 'pony'
 require 'dotenv/load'
 require 'openssl'
 require 'pp'
+include ERB::Util
 
 ##############################
 # Initialize
