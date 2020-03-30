@@ -357,7 +357,7 @@ route :get, :post, '/:shortcode' do
     end
 
     # if confirmation email submitted and email matches with secret email, show secret
-    if params['confirmemail'] and params['email'] == @secret['email']
+    if params['confirmemail'] and params['email'].downcase == @secret['email'].downcase
       $redis.del "secrets:#{params[:shortcode]}"
       halt erb(:showsecret)
     else
