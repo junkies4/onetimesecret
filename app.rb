@@ -9,6 +9,7 @@ require 'pony'
 require 'dotenv/load'
 require 'openssl'
 require 'pp'
+require 'statsd-ruby'
 include ERB::Util
 
 ##############################
@@ -22,6 +23,10 @@ configure do
 
   # populate appconfig hash via environment vars or read from the .env config file
   $appconfig = Hash.new
+
+  # Statsd config
+  $appconfig['statsd_host']     = ENV['STATSD_HOST']     || nil
+  $appconfig['statsd_port']     = ENV['STATSD_PORT']     || nil
 
   # Redis config
   $appconfig['redis_host']      = ENV['REDIS_HOST']      || nil
@@ -64,13 +69,15 @@ configure do
   set :logger, Logger.new(STDERR)
 
   # create connection to redis database
-  # if $appconfig['redis_password'] == ''
   if $appconfig['redis_password'].nil?
     $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'])
-    # docker-compose hack - issue with redis_port ENV variable - needs to be fixed.
-    # $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: 6379)
   else
     $redis = Redis.new(host: "#{$appconfig['redis_host']}", port: $appconfig['redis_port'], password: "#{$appconfig['redis_password']}")
+  end
+
+  # create connection to statsd metrics backend
+  unless $appconfig['statsd_host'].nil?
+    $statsd = Statsd.new("#{$appconfig['statsd_host']}",$appconfig['statsd_port'])
   end
 end
 
@@ -196,7 +203,29 @@ helpers do
 
     # store the hash in redis
     $redis.setex "secrets:#{params['secreturi']}", params['ttl'], encrypted_params
+
+    # and send out a metric of this event
+    update_metrics("secretscreated") unless $statsd.nil?
+
     return params
+  end
+
+  def update_metrics(metricname)
+    # the value of #{metricname} can be 'secretscreated' or 'secretsretrieved'
+    # this value is used as the metric name sent to statsd
+
+    if metricname == "secretscreated" || "secretsretrieved"
+      # Increment a counter with 1 to record when a secret is created or retrieved
+      $statsd.increment("statsd.OnetimeSecret.#{metricname}")
+
+      # Each time a record is created or removed,
+      # read the number of records in the redis database and store this value
+      $statsd.gauge("statsd.OnetimeSecret.secretsindbase",$redis.dbsize)
+    else
+      logger.error "update_metrics() metricname must be 'secretscreated' or 'secretsretrieved'"
+    end
+
+    return
   end
 
   def send_email(to,secreturi)
@@ -344,6 +373,7 @@ route :get, :post, '/:shortcode' do
     # if the secret does not contain email, show secret and halt
     if @secret['email'] == ''
       $redis.del "secrets:#{params[:shortcode]}"
+      update_metrics("secretsretrieved") unless $statsd.nil?
       if params['format'] == "json"
         json(JSON.parse(redis_secret.gsub('=>', ':')))
       else
@@ -359,6 +389,7 @@ route :get, :post, '/:shortcode' do
     # if confirmation email submitted and email matches with secret email, show secret
     if params['confirmemail'] and params['email'].downcase == @secret['email'].downcase
       $redis.del "secrets:#{params[:shortcode]}"
+      update_metrics("secretsretrieved") unless $statsd.nil?
       halt erb(:showsecret)
     else
       # else, confirmation email not correct, abort
