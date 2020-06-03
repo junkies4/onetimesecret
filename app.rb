@@ -214,7 +214,7 @@ helpers do
     # the value of #{metricname} can be 'secretscreated' or 'secretsretrieved'
     # this value is used as the metric name sent to statsd
 
-    if metricname == "secretscreated" || "secretsretrieved"
+    if metricname == "secretscreated" || "secretsretrieved" || "secretsinvalid"
       # Increment a counter with 1 to record when a secret is created or retrieved
       $statsd.increment("statsd.OnetimeSecret.#{metricname}")
 
@@ -222,7 +222,7 @@ helpers do
       # read the number of records in the redis database and store this value
       $statsd.gauge("statsd.OnetimeSecret.secretsindbase",$redis.dbsize)
     else
-      logger.error "update_metrics() metricname must be 'secretscreated' or 'secretsretrieved'"
+      logger.error "update_metrics() metricname must be 'secretscreated', 'secretsretrieved' or 'secretsinvalid'"
     end
 
     return
@@ -356,6 +356,7 @@ route :get, :post, '/:shortcode' do
   # if secret not found in redis, halt with error
   if redis_secret == nil
     @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!" 
+    update_metrics("secretsinvalid") unless $statsd.nil?
     halt erb(:layout)
   end
 
