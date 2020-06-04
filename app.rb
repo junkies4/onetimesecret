@@ -222,7 +222,8 @@ helpers do
       # read the number of records in the redis database and store this value
       $statsd.gauge("statsd.OnetimeSecret.secretsindbase",$redis.dbsize)
     else
-      logger.error "update_metrics() metricname must be 'secretscreated', 'secretsretrieved' or 'secretsinvalid'"
+      @error = "update_metrics() metricname must be 'secretscreated', 'secretsretrieved' or 'secretsinvalid'"
+      halt erb(:layout)
     end
 
     return
