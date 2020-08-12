@@ -230,12 +230,17 @@ helpers do
   end
 
   def send_email(to,secreturi)
+    context = binding
+    html_body = ERB.new(File.read("views/email-html-template.erb")).result(context)
+    text_body = ERB.new(File.read("views/email-text-template.erb")).result(context)
+
     Pony.mail({
-      :from => $appconfig['smtp_from'],
-      :to => to,
-      :subject => 'Secret Shared via Onetimescret',
-      :body => "#{request.scheme}://#{request.host}/#{secreturi}",
-      :via => :smtp,
+      :from        => $appconfig['smtp_from'],
+      :to          => to,
+      :subject     => 'Secret shared via Onetimescret',
+      :body        => text_body,
+      :html_body   => html_body,
+      :via         => :smtp,
       :via_options => {
         :address              => $appconfig['smtp_address'],
         :port                 => $appconfig['smtp_port'],
@@ -246,6 +251,7 @@ helpers do
         # :authentication => :plain, # :plain, :login, :cram_md5, no auth by default
       }
     })
+
     logger.info "mail sent to #{to}"
   end
 end
