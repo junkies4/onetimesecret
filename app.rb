@@ -24,6 +24,12 @@ configure do
   # populate appconfig hash via environment vars or read from the .env config file
   $appconfig = Hash.new
 
+  # Application Name
+  $appconfig['app_name']        = ENV['APP_NAME'] || nil
+
+  # HTML email logo
+  $appconfig['html_email_logo'] = ENV['HTML_EMAIL_LOGO'] || nil
+
   # Statsd config
   $appconfig['statsd_host']     = ENV['STATSD_HOST']     || nil
   $appconfig['statsd_port']     = ENV['STATSD_PORT']     || nil
