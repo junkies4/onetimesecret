@@ -24,6 +24,9 @@ configure do
   # populate appconfig hash via environment vars or read from the .env config file
   $appconfig = Hash.new
 
+  # Base URL
+  $appconfig['base_url']        = ENV['BASE_URL'] || nil
+
   # Application Name
   $appconfig['app_name']        = ENV['APP_NAME'] || nil
 
@@ -93,6 +96,15 @@ end
 
 # begin sinatra helpers block
 helpers do
+
+  def redirect_to_base_url()
+    accessed_url = "#{request.scheme}://#{request.host}"
+
+    if accessed_url != $appconfig['base_url'] and not $appconfig['base_url'].nil?
+      redirect to ($appconfig['base_url'] + "#{request.path}"), 301
+    end
+  end
+
   def generate_randomstring(secretlength,secretiscomplex)
     charset = Array('A'..'Z') + Array('a'..'z') + Array('0'..'9')
 
@@ -272,11 +284,15 @@ end
 
 # help
 route :get, '/help' do
+  redirect_to_base_url()
+
   erb :help
 end
 
 # generate custom secret
 route :get, :post, '/' do
+  redirect_to_base_url()
+
   if params['storesecret']
     @storedsecret = storesecret(params)
     if params['email'] != ''
@@ -303,6 +319,8 @@ end
 
 # generate randomstring
 route :get, :post, '/randomstring' do
+  redirect_to_base_url()
+
   if params['storesecret']
     @storedsecret = storesecret(params)
     if params['email'] != ''
@@ -331,6 +349,8 @@ end
 
 # generate ssh keypair
 route :get, :post, '/sshkeypair' do
+  redirect_to_base_url()
+
   if params['storesecret']
     @storedsecret = storesecret(params)
     if params['email'] != ''
@@ -363,6 +383,8 @@ end
 
 # retrieve a secret
 route :get, :post, '/:shortcode' do
+  redirect_to_base_url()
+
   # get the secret from the redis database
   redis_secret = $redis.get "secrets:#{params['shortcode']}"
 
