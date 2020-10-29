@@ -13,7 +13,6 @@
       <td>SSH Key Length:</td>
       <td>
         <select name="keylength">
-         <option value="1024" <% if @secret['keylength'] == 1024 %>selected<% end %>>1024</option>
          <option value="2048" <% if @secret['keylength'] == 2048 %>selected<% end %>>2048</option>
          <option value="4096" <% if @secret['keylength'] == 4096 %>selected<% end %>>4096</option>
         </select>
