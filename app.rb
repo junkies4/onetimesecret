@@ -44,6 +44,7 @@ configure do
   $appconfig['redis_secretttl'] = ENV['REDIS_SECRETTTL'] || nil
 
   $appconfig['encryption_key']  = ENV['ENCRYPTION_KEY']  || nil
+  $appconfig['encryption_auth'] = ENV['ENCRYPTION_AUTH']  || nil
 
   # secrettypes: customsecret, randomstring, sshkeypair
   $appconfig['secrettype_randomstring_secretlength']    = ENV['SECRETTYPE_RANDOMSTRING_SECRETLENGTH']    || nil
@@ -163,11 +164,11 @@ helpers do
     return secret
   end
 
-  # encrypt a string using a pre-defined encryption key
-  def encrypt(unencrypted_text,encryption_key)
+  # encrypt a string using a pre-defined encryption key and encryption_auth
+  def encrypt(unencrypted_text,encryption_key,encryption_auth)
 
     # initialize new cipher object
-    cipher = OpenSSL::Cipher::AES256.new :CFB
+    cipher = OpenSSL::Cipher.new('aes-256-gcm')
     cipher.encrypt
 
     # generate random Initialization Vector (iv) aka Salt
@@ -178,22 +179,29 @@ helpers do
     # set the predefined encryption_key as the cipher.key
     cipher.key = encryption_key
 
+    # set the predefined encryption_auth as the cipher.auth_data
+    cipher.auth_data = encryption_auth
+
     # encrypt the string and Base64 encode it
     encrypted_text = Base64.encode64(cipher.update(unencrypted_text) + cipher.final)
 
-    # create new hash to store the IV and encrypted string
-    encrypted_result           = Hash.new
-    encrypted_result['params'] = encrypted_text
-    encrypted_result['iv']     = encrypted_iv
+    # get the authentication tag
+    auth_tag = Base64.encode64(cipher.auth_tag)
+
+    # create new hash to store the IV, auth_tag and encrypted string
+    encrypted_result             = Hash.new
+    encrypted_result['params']   = encrypted_text
+    encrypted_result['iv']       = encrypted_iv
+    encrypted_result['auth_tag'] = auth_tag
 
     return encrypted_result
   end
 
-  # decrypt a string using a pre-defined encryption key
-  def decrypt(encrypted_secret,encryption_key)
+  # decrypt a string using a pre-defined encryption key and encryption_auth
+  def decrypt(encrypted_secret,encryption_key,encryption_auth)
 
     # initialize new cipher object
-    decipher = OpenSSL::Cipher::AES256.new :CFB
+    decipher = OpenSSL::Cipher.new('aes-256-gcm')
     decipher.decrypt
 
     # use the base64 decoded IV which was fetched from the redis secret
@@ -201,6 +209,12 @@ helpers do
 
     # set the predefined encryption_key as the decipher.key
     decipher.key = encryption_key
+
+    # set the predefined encryption_auth as the decipher.auth_data
+    decipher.auth_data = encryption_auth
+
+    # use the base64 decoded authentication tag which was fetched from the redis secret
+    decipher.auth_tag = Base64.decode64(encrypted_secret['auth_tag'])
 
     # decrypt and decode the secret
     decrypted_secret = Base64.decode64(decipher.update(Base64.decode64(encrypted_secret['params'])) + decipher.final)
@@ -217,7 +231,7 @@ helpers do
     # convert the params hash to json and then Base64 encode it.
     # the 'encrypt' function returns a hash containing the Base64 encode encrypted string and iv.
     encrypted_params = Hash.new
-    encrypted_params = encrypt(Base64.encode64(JSON.dump(params)),$appconfig['encryption_key'])
+    encrypted_params = encrypt(Base64.encode64(JSON.dump(params)),$appconfig['encryption_key'],$appconfig['encryption_auth'])
 
     # store the hash in redis
     $redis.setex "secrets:#{params['secreturi']}", params['ttl'], encrypted_params
@@ -404,7 +418,7 @@ route :get, :post, '/:shortcode' do
     encrypted_secret = JSON.parse(redis_secret.gsub('=>', ':'))
 
     # decode and decrypt the secret
-    @secret = JSON.parse(decrypt(encrypted_secret,$appconfig['encryption_key']))
+    @secret = JSON.parse(decrypt(encrypted_secret,$appconfig['encryption_key'],$appconfig['encryption_auth']))
 
     # if the secret does not contain email, show secret and halt
     if @secret['email'] == ''
