@@ -278,9 +278,9 @@ helpers do
         :port                 => $appconfig['smtp_port'],
         :domain               => $appconfig['smtp_helo_domain'],
         :enable_starttls_auto => true,
-        # :user_name      => $appconfig['smtp_username'],
-        # :password       => $appconfig['smtp_password'],
-        # :authentication => :plain, # :plain, :login, :cram_md5, no auth by default
+        :user_name            => $appconfig['smtp_username'],
+        :password             => $appconfig['smtp_password'],
+        :authentication => :cram_md5, # :plain, :login, :cram_md5, no auth by default
       }
     })
 
@@ -404,7 +404,7 @@ route :get, :post, '/:shortcode' do
 
   # if secret not found in redis, halt with error
   if redis_secret == nil
-    @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!" 
+    @error = "ERROR: Secret already retrieved, Secret Expired or Invalid Secret URI!"
     update_metrics("secretsinvalid") unless $statsd.nil?
     halt erb(:layout)
   end
@@ -443,7 +443,7 @@ route :get, :post, '/:shortcode' do
       halt erb(:showsecret)
     else
       # else, confirmation email not correct, abort
-      @error = "ERROR: Email address incorrect!" 
+      @error = "ERROR: Email address incorrect!"
       halt erb(:layout)
     end
   else
