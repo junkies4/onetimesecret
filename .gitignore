@@ -1,3 +1,5 @@
 .env
 Gemfile.lock
-Dockerfile
+docker-compose.yml
+docker-push.bat
+.gitignore
