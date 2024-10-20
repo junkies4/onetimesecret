@@ -3,3 +3,25 @@
   word-wrap: normal;
   white-space: pre;
 }
+
+.navbar-header .navbar-tagline {
+  width: 100%;
+  text-align: left;
+  font-size: 1.2rem;
+}
+
+/* Hide short text by default (resolution > 1200px) */
+li.tagline-short { display: none; }
+.tagline-full {
+  margin-top: 0px;
+  margin-bottom: 5px;
+}
+/* When resolution <= 1200px, hide full text and show short text */
+@media (max-width: 1200px) {
+    li.tagline-short {
+      display: block;
+    }
+    .tagline-full {
+      display: none;
+    }
+}

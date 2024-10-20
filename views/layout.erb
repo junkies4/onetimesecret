@@ -23,6 +23,7 @@
   <body>
     <div class="container">
       <!-- Static navbar -->
+
       <nav class="navbar navbar-default" role="navigation">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -31,20 +32,27 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/">OneTimeSecret - Keep sensitive data out of email and chat logs</a>
-        <a class="navbar-brand" href="/help">Help</a>
+        <a href="/" class="navbar-brand">
+          <img src="logo.svg" height="25px" alt="logo" style="vertical-align: middle;" >
+          OneTimeSecret
+        </a>
+        <div class="navbar-text navbar-tagline tagline-full">Keep sensitive data out of email and chat logs</div>
       </div>
       <div class="navbar-collapse collapse">
-        <ul class="nav navbar-nav">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="navbar-text navbar-tagline tagline-short">Keep sensitive data safe</li>
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create Secret<b class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li><a href="/sshkeypair">sshkeypair</a></li>
+              <li><a href="/sshkeypair">SSH Key Pair</a></li>
               <li class="divider"></li>
-              <li><a href="/randomstring">randomstring</a></li>
+              <li><a href="/randomstring">Radom String</a></li>
               <li class="divider"></li>
-              <li><a href="/">customsecret</a></li>
+              <li><a href="/">Custom</a></li>
             </ul>
+          </li>
+          <li>
+            <a class="navbar-item" href="/help">Help</a>
           </li>
         </ul>
       </div>
