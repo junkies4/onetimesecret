@@ -1,5 +1,6 @@
 source 'https://rubygems.org'
 
+gem 'rackup'
 gem 'sinatra'
 gem 'sinatra-logger'
 gem 'sinatra-contrib'
